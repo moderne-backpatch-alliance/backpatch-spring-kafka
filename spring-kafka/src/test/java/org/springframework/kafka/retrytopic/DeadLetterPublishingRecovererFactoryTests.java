@@ -146,6 +146,81 @@ class DeadLetterPublishingRecovererFactoryTests {
 	}
 
 	@Test
+	void shouldDefaultToOneWhenNegativeAttemptsProvided() {
+		RuntimeException e = new RuntimeException();
+		ConsumerRecord consumerRecord = new ConsumerRecord(testTopic, 0, 0, key, value);
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ATTEMPTS, ByteBuffer.allocate(Integer.BYTES)
+				.putInt(Integer.MIN_VALUE).array());
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ORIGINAL_TIMESTAMP, this.originalTimestampBytes);
+
+		given(destinationTopicResolver.resolveDestinationTopic(testTopic, 1, e, originalTimestamp))
+				.willReturn(destinationTopic);
+		given(destinationTopic.isNoOpsTopic()).willReturn(false);
+		given(destinationTopic.getDestinationName()).willReturn(testRetryTopic);
+		given(destinationTopicResolver.getDestinationTopicByName(testRetryTopic)).willReturn(destinationTopic);
+		willReturn(kafkaOperations).given(destinationTopic).getKafkaOperations();
+		given(kafkaOperations.send(any(ProducerRecord.class))).willReturn(listenableFuture);
+
+		DeadLetterPublishingRecovererFactory factory = new DeadLetterPublishingRecovererFactory(
+				this.destinationTopicResolver);
+		factory.create().accept(consumerRecord, e);
+
+		then(destinationTopicResolver)
+				.should(times(2))
+				.resolveDestinationTopic(testTopic, 1, e, originalTimestamp);
+	}
+
+	@Test
+	void shouldDefaultToOneWhenIntegerMaxAttemptsProvided() {
+		RuntimeException e = new RuntimeException();
+		ConsumerRecord consumerRecord = new ConsumerRecord(testTopic, 0, 0, key, value);
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ATTEMPTS, ByteBuffer.allocate(Integer.BYTES)
+				.putInt(Integer.MAX_VALUE).array());
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ORIGINAL_TIMESTAMP, this.originalTimestampBytes);
+
+		given(destinationTopicResolver.resolveDestinationTopic(testTopic, 1, e, originalTimestamp))
+				.willReturn(destinationTopic);
+		given(destinationTopic.isNoOpsTopic()).willReturn(false);
+		given(destinationTopic.getDestinationName()).willReturn(testRetryTopic);
+		given(destinationTopicResolver.getDestinationTopicByName(testRetryTopic)).willReturn(destinationTopic);
+		willReturn(kafkaOperations).given(destinationTopic).getKafkaOperations();
+		given(kafkaOperations.send(any(ProducerRecord.class))).willReturn(listenableFuture);
+
+		DeadLetterPublishingRecovererFactory factory = new DeadLetterPublishingRecovererFactory(
+				this.destinationTopicResolver);
+		factory.create().accept(consumerRecord, e);
+
+		then(destinationTopicResolver)
+				.should(times(2))
+				.resolveDestinationTopic(testTopic, 1, e, originalTimestamp);
+	}
+
+	@Test
+	void shouldDefaultToOneWhenLegacyHighBitHeaderUnsigned() {
+		RuntimeException e = new RuntimeException();
+		ConsumerRecord consumerRecord = new ConsumerRecord(testTopic, 0, 0, key, value);
+		// must decode to unsigned 128, not sign-extended -128.
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ATTEMPTS, new byte[] { (byte) 0x80 });
+		consumerRecord.headers().add(RetryTopicHeaders.DEFAULT_HEADER_ORIGINAL_TIMESTAMP, this.originalTimestampBytes);
+
+		given(destinationTopicResolver.resolveDestinationTopic(testTopic, 128, e, originalTimestamp))
+				.willReturn(destinationTopic);
+		given(destinationTopic.isNoOpsTopic()).willReturn(false);
+		given(destinationTopic.getDestinationName()).willReturn(testRetryTopic);
+		given(destinationTopicResolver.getDestinationTopicByName(testRetryTopic)).willReturn(destinationTopic);
+		willReturn(kafkaOperations).given(destinationTopic).getKafkaOperations();
+		given(kafkaOperations.send(any(ProducerRecord.class))).willReturn(listenableFuture);
+
+		DeadLetterPublishingRecovererFactory factory = new DeadLetterPublishingRecovererFactory(
+				this.destinationTopicResolver);
+		factory.create().accept(consumerRecord, e);
+
+		then(destinationTopicResolver)
+				.should(times(2))
+				.resolveDestinationTopic(testTopic, 128, e, originalTimestamp);
+	}
+
+	@Test
 	void shouldIncreaseAttemptsInLegacyHeader() {
 
 		// setup
