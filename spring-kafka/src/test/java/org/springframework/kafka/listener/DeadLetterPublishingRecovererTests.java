@@ -70,6 +70,7 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer.HeaderNa
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.kafka.support.serializer.DeserializationException;
+import org.springframework.kafka.support.serializer.SerializationTestUtils;
 import org.springframework.kafka.support.serializer.SerializationUtils;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.util.concurrent.ListenableFuture;
@@ -170,8 +171,10 @@ public class DeadLetterPublishingRecovererTests {
 		KafkaOperations<?, ?> template = mock(KafkaOperations.class);
 		DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template);
 		Headers headers = new RecordHeaders();
-		headers.add(new RecordHeader(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER, header(false)));
-		headers.add(new RecordHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER, header(true)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER,
+				header(false)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER,
+				header(true)));
 		Headers custom = new RecordHeaders();
 		custom.add(new RecordHeader("foo", "bar".getBytes()));
 		recoverer.setHeadersFunction((rec, ex) -> custom);
@@ -200,7 +203,8 @@ public class DeadLetterPublishingRecovererTests {
 		KafkaOperations<?, ?> template = mock(KafkaOperations.class);
 		DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template);
 		Headers headers = new RecordHeaders();
-		headers.add(new RecordHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER, header(true)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER,
+				header(true)));
 		SettableListenableFuture future = new SettableListenableFuture();
 		future.set(new Object());
 		willReturn(future).given(template).send(any(ProducerRecord.class));
@@ -220,8 +224,8 @@ public class DeadLetterPublishingRecovererTests {
 		DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template);
 		Headers headers = new RecordHeaders();
 		DeserializationException deserEx = createDeserEx(true);
-		headers.add(
-				new RecordHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER, header(true, deserEx)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER,
+				header(true, deserEx)));
 		SettableListenableFuture future = new SettableListenableFuture();
 		future.set(new Object());
 		willReturn(future).given(template).send(any(ProducerRecord.class));
@@ -243,8 +247,10 @@ public class DeadLetterPublishingRecovererTests {
 		DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template);
 		recoverer.setRetainExceptionHeader(true);
 		Headers headers = new RecordHeaders();
-		headers.add(new RecordHeader(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER, header(false)));
-		headers.add(new RecordHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER, header(true)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER,
+				header(false)));
+		headers.add(SerializationTestUtils.deserializationHeader(SerializationUtils.KEY_DESERIALIZER_EXCEPTION_HEADER,
+				header(true)));
 		SettableListenableFuture future = new SettableListenableFuture();
 		future.set(new Object());
 		willReturn(future).given(template).send(any(ProducerRecord.class));
