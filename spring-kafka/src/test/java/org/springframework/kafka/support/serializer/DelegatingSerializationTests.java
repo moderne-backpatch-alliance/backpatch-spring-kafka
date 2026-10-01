@@ -33,6 +33,7 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.BytesDeserializer;
 import org.apache.kafka.common.serialization.BytesSerializer;
+import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -42,9 +43,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.kafka.support.DefaultKafkaHeaderMapper;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * @author Gary Russell
+ * @author Soby Chacko
  * @since 2.3
  *
  */
@@ -197,14 +200,49 @@ public class DelegatingSerializationTests {
 	}
 
 	@Test
-	void testBadIncomingOnlyOnce() {
+	void testBadIncomingFallsBackToRawInput() {
 		DelegatingDeserializer spy = spy(new DelegatingDeserializer());
 		Headers headers = new RecordHeaders();
 		headers.add(new RecordHeader(DelegatingSerializer.VALUE_SERIALIZATION_SELECTOR, "junk".getBytes()));
 		byte[] data = "foo".getBytes();
-		assertThat(spy.deserialize("foo", headers, data)).isSameAs(data);
-		spy.deserialize("foo", headers, data);
-		verify(spy, times(1)).trySerdes("junk");
+		Object deserialized1 = spy.deserialize("foo", headers, data);
+		assertThat(deserialized1).isSameAs(data);
+		Object deserialized2 = spy.deserialize("foo", headers, data);
+		assertThat(deserialized2).isSameAs(data);
+		verify(spy, times(2)).trySerdes("junk");
+	}
+
+	@Test
+	void testSelectorForClassNotKnownToSerdesFallsBackToRawInput() {
+		try (DelegatingDeserializer deserializer = new DelegatingDeserializer()) {
+			Headers headers = new RecordHeaders();
+			// testing for the IAE scenario
+			headers.add(new RecordHeader(DelegatingSerializer.VALUE_SERIALIZATION_SELECTOR,
+					Object.class.getName().getBytes()));
+			byte[] data = "payload".getBytes();
+			Object deserialized = deserializer.deserialize("topic", headers, data);
+			assertThat(deserialized).isSameAs(data);
+		}
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void testUniqueBadKeysDoNotGrowDelegates() {
+		try (DelegatingDeserializer deserializer = new DelegatingDeserializer()) {
+			Map<String, Deserializer<?>> delegates =
+					(Map<String, Deserializer<?>>) ReflectionTestUtils.getField(deserializer, "delegates");
+			assertThat(delegates).isNotNull();
+			int initialSize = delegates.size();
+			byte[] data = "payload".getBytes();
+			for (int i = 0; i < 100; i++) {
+				Headers headers = new RecordHeaders();
+				headers.add(new RecordHeader(DelegatingSerializer.VALUE_SERIALIZATION_SELECTOR,
+						("junk-selector-" + i).getBytes()));
+				Object deserialized = deserializer.deserialize("topic", headers, data);
+				assertThat(deserialized).isSameAs(data);
+			}
+			assertThat(delegates.size()).isEqualTo(initialSize);
+		}
 	}
 
 	@Test
