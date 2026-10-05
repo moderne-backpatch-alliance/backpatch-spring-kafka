@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 the original author or authors.
+ * Copyright 2017-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.kafka.support.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
@@ -36,9 +37,12 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.record.TimestampType;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.core.log.LogAccessor;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.KafkaUtils;
+import org.springframework.kafka.support.serializer.SerializationTestUtils;
+import org.springframework.kafka.support.serializer.SerializationUtils;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 
@@ -155,6 +159,28 @@ public class BatchMessageConverterTests {
 		assertThat(((List<String>) message.getPayload())).contains("baz");
 		assertThat(message.getHeaders().get(KafkaHeaders.RECEIVED_TOPIC, List.class)).contains("foo");
 		assertThat(message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY, List.class)).contains("bar");
+	}
+
+	/**
+	 * CVE-2023-34040 for batch listeners: a deserialization exception header that came from the wire
+	 * reaches the listener as its {@link Header}, not as raw bytes, so the documented check refuses it.
+	 */
+	@SuppressWarnings("unchecked")
+	@Test
+	void deserializationExceptionHeaderFromTheWireIsRefusedInABatch() {
+		BatchMessageConverter converter = new BatchMessagingMessageConverter();
+		Headers headers = new RecordHeaders(new Header[] {
+				new RecordHeader(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER, SerializationTestUtils.header(false)) });
+		ConsumerRecord<String, String> record = new ConsumerRecord<>("foo", 1, 42, -1L, null, 0, 0, "bar", null,
+				headers, Optional.empty());
+		Message<?> message = converter.toMessage(Collections.singletonList(record), null, null, null);
+		Object fromTheWire = ((List<Map<String, Object>>) message.getHeaders().get(KafkaHeaders.BATCH_CONVERTED_HEADERS))
+				.get(0).get(SerializationUtils.VALUE_DESERIALIZER_EXCEPTION_HEADER);
+		assertThat(fromTheWire).isInstanceOf(Header.class);
+		assertThatIllegalStateException()
+				.isThrownBy(() -> SerializationUtils.byteArrayToDeserializationException(new LogAccessor(getClass()),
+						(Header) fromTheWire))
+				.withMessageContaining("Foreign deserialization exception header");
 	}
 
 }
