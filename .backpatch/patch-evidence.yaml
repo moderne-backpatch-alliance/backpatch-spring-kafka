@@ -1,0 +1,18 @@
+schema: osera-patch-evidence/0.1.0
+producer: moderne
+release: 2.8.11.1-backpatch-00001
+baseline: v2.8.11+backpatch.baseline
+fixes:
+  - cve: CVE-2026-41731
+    upstream: https://nvd.nist.gov/vuln/detail/CVE-2026-41731
+    artifacts:
+      - org.springframework.kafka:spring-kafka
+    note: New in this release; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00001 (backpatch-spring-kafka@23c1787).
+tests:
+  commit: 23c1787f8b9fb005c72b4b4601d34d7c1c2015b8
+  command: ./gradlew --no-daemon --offline -I <alliance>/ecosystem/gradle/init-backpatch.gradle -Dbackpatch.version=2.8.11.1-backpatch-00001 -Dbackpatch.repository.url=<repository> -Dbackpatch.compile.jdk=11 :spring-kafka:test --rerun-tasks --tests org.springframework.kafka.support.DefaultKafkaHeaderMapperTrustPackagesTests
+  runtime: OpenJDK 11.0.20 (Zulu), Gradle wrapper of the repository
+  report: spring-kafka-2.8.11.1-backpatch-00001-tests.zip
+  report_sha256: 392f1c26f68ac6a434b4767c1f9e01a3b5bcef884650c56a6d8184f9a6de9a48
+  result: pass
+  note: the regression tests the fix commit touched, 3 test(s) run, 0 failed, at the tested commit
