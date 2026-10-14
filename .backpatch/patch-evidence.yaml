@@ -1,18 +1,23 @@
 schema: osera-patch-evidence/0.1.0
 producer: moderne
-release: 2.8.11.1-backpatch-00001
+release: 2.8.11.1-backpatch-00002
 baseline: v2.8.11+backpatch.baseline
 fixes:
   - cve: CVE-2026-41731
     upstream: https://nvd.nist.gov/vuln/detail/CVE-2026-41731
     artifacts:
       - org.springframework.kafka:spring-kafka
-    note: New in this release; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00001 (backpatch-spring-kafka@23c1787).
+    note: Carried from 2.8.11.1-backpatch-00001; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00001 (backpatch-spring-kafka@23c1787).
+  - cve: CVE-2023-34040
+    upstream: https://nvd.nist.gov/vuln/detail/CVE-2023-34040
+    artifacts:
+      - org.springframework.kafka:spring-kafka
+    note: New in this release; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00002 (backpatch-spring-kafka@53aef17..0e2a60a).
 tests:
-  commit: 23c1787f8b9fb005c72b4b4601d34d7c1c2015b8
-  command: ./gradlew --no-daemon --offline -I <alliance>/ecosystem/gradle/init-backpatch.gradle -Dbackpatch.version=2.8.11.1-backpatch-00001 -Dbackpatch.repository.url=<repository> -Dbackpatch.compile.jdk=11 :spring-kafka:test --rerun-tasks --tests org.springframework.kafka.support.DefaultKafkaHeaderMapperTrustPackagesTests
+  commit: 0e2a60ad8af1e1c5289c7ec167bde37daa7f0fea
+  command: ./gradlew --no-daemon --offline -I <alliance>/ecosystem/gradle/init-backpatch.gradle -Dbackpatch.version=2.8.11.1-backpatch-00002 -Dbackpatch.repository.url=<repository> -Dbackpatch.compile.jdk=11 :spring-kafka:test --rerun-tasks --tests org.springframework.kafka.listener.DeadLetterPublishingRecovererTests --tests org.springframework.kafka.listener.ErrorHandlingDeserializerTests --tests org.springframework.kafka.listener.adapter.BatchAdapterConversionErrorsTests --tests org.springframework.kafka.support.serializer.SerializationUtilsTests --tests org.springframework.kafka.support.DefaultKafkaHeaderMapperTests --tests org.springframework.kafka.support.converter.BatchMessageConverterTests
   runtime: OpenJDK 11.0.20 (Zulu), Gradle wrapper of the repository
-  report: spring-kafka-2.8.11.1-backpatch-00001-tests.zip
-  report_sha256: 392f1c26f68ac6a434b4767c1f9e01a3b5bcef884650c56a6d8184f9a6de9a48
+  report: spring-kafka-2.8.11.1-backpatch-00002-tests.zip
+  report_sha256: 72e81deefcc01f0533b88ea11bf16ff9f5e1d2c62047b756f84eb8822fc85775
   result: pass
-  note: the regression tests the fix commit touched, 3 test(s) run, 0 failed, at the tested commit
+  note: the regression tests the fix commits touched, 46 test(s) run, 0 failed, at the tested commit
