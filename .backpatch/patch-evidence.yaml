@@ -1,6 +1,6 @@
 schema: osera-patch-evidence/0.1.0
 producer: moderne
-release: 2.8.11.1-backpatch-00004
+release: 2.8.11.1-backpatch-00005
 baseline: v2.8.11+backpatch.baseline
 fixes:
   - cve: CVE-2026-41731
@@ -22,12 +22,17 @@ fixes:
     upstream: https://nvd.nist.gov/vuln/detail/CVE-2026-41727
     artifacts:
       - org.springframework.kafka:spring-kafka
-    note: New in this release; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00004 (backpatch-spring-kafka@aed19fc).
+    note: Carried from 2.8.11.1-backpatch-00004; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00004 (backpatch-spring-kafka@aed19fc).
+  - cve: CVE-2026-59278
+    upstream: https://nvd.nist.gov/vuln/detail/CVE-2026-59278
+    artifacts:
+      - org.springframework.kafka:spring-kafka
+    note: New in this release; ported onto 2.8.11; fixed at 2.8.11.1-backpatch-00005 (backpatch-spring-kafka@9c243dc).
 tests:
-  commit: aed19fc8875278fa856448ad5d0b80db41386b1b
-  command: ./gradlew --no-daemon --offline -I <alliance>/ecosystem/gradle/init-backpatch.gradle -Dbackpatch.version=2.8.11.1-backpatch-00004 -Dbackpatch.repository.url=<repository> -Dbackpatch.compile.jdk=11 :spring-kafka:test --rerun-tasks --tests org.springframework.kafka.listener.adapter.KafkaBackoffAwareMessageListenerAdapterTests --tests org.springframework.kafka.retrytopic.DeadLetterPublishingRecovererFactoryTests
+  commit: 9c243dc85116f32682e4cde06f854f5e3c802c27
+  command: ./gradlew --no-daemon --offline -I <alliance>/ecosystem/gradle/init-backpatch.gradle -Dbackpatch.version=2.8.11.1-backpatch-00005 -Dbackpatch.repository.url=<repository> -Dbackpatch.compile.jdk=11 :spring-kafka:test --rerun-tasks --tests org.springframework.kafka.support.DefaultKafkaHeaderMapperTests
   runtime: OpenJDK 11.0.20 (Zulu), Gradle wrapper of the repository
-  report: spring-kafka-2.8.11.1-backpatch-00004-tests.zip
-  report_sha256: 98fcbc5effe3a081d7e654a92f6753a18620e04be4f78667ecd7226fed757584
+  report: spring-kafka-2.8.11.1-backpatch-00005-tests.zip
+  report_sha256: 9b594b1b2793342cd89d56daa732093f67baa2038e5f8d7fbc2d0c301188b606
   result: pass
-  note: the regression tests the fix commit touched, 23 test(s) run, 0 failed, at the tested commit
+  note: the regression tests the fix commit touched, 26 test(s) run, 0 failed, at the tested commit
